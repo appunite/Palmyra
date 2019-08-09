@@ -23,10 +23,9 @@ class FileFormatValidatorTests: XCTestCase {
         sut = nil
     }
     
-    func testValidation_whenFileIsValidWithMultilineComment_shouldSuccessfullyParseAndValidate() throws {
-        // given
+    func testValidation_whenFileContainsMultilineComment_shouldSuccessfullyParseAndValidate() throws {
         let fileContents =
-        #"""
+        """
         /* single line comment */
         "key 1" = "translation 1";
 
@@ -34,56 +33,88 @@ class FileFormatValidatorTests: XCTestCase {
         line
         comment */
         "key 2" = "translation 2";
-        """#
-        setFile(with: fileContents)
-        
-        // when
-        let result = try sut.validateFileFormat(at: testFileURL)
-                    
-        // then
-        let expected = LocalizableFile(
-            path: testFileURL.path,
-            lines: [
-                "key 1": "translation 1",
-                "key 2": "translation 2"
-            ]
-        )
-        XCTAssertEqual(expected, result)
+        """
+        let expectedLines = [
+            "key 1": "translation 1",
+            "key 2": "translation 2"
+        ]
+        try performTestExpectingSuccessfulResult(fileContents: fileContents, expectedLines: expectedLines)
     }
     
-    func testValidation_whenFileIsValidWithTranslationContainingNewlines_shouldSuccessfullyParseAndValidate(
+    func testValidation_whenFileContainsTranslationWithNewlines_shouldSuccessfullyParseAndValidate() throws {
+        let fileContents =
+        """
+        /* single line comment */
+        "key 1" = "tran\nslation\n1";
+        """
+        let expectedLines = ["key 1": "tran\nslation\n1"]
+        try performTestExpectingSuccessfulResult(fileContents: fileContents, expectedLines: expectedLines)
+    }
+    
+    func testValidation_whenFileContainsTranslationWithEscapedQuotes_shouldSuccessfullyParseAndValidate() throws {
+        let fileContents =
+        """
+        /* single line comment */
+        "key 1" = "\"quote\" - Famous Person";
+        """
+        let expectedLines = ["key 1": "\"quote\" - Famous Person"]
+        try performTestExpectingSuccessfulResult(fileContents: fileContents, expectedLines: expectedLines)
+    }
+    
+    func testValidation1_whenFileContainsTranslationWithEscapedQuotes_shouldSuccessfullyParseAndValidate() throws {
+        // when
+        let url = Bundle(for: FileFormatValidatorTests.self).url(forResource: "Localizable", withExtension: "strings")!
+        let result = sut.validateFileFormat(at: url)
+        let parsed: LocalizableStrings
+        switch result {
+        case let .success(p):
+            for value in p.lines.values {
+                print(value)
+            }
+            parsed = p
+        case let .failure(error):
+            XCTFail((error as! LocalizedError).localizedDescription)
+            return
+        }
+        
+        // then
+        let expected = LocalizableStrings(
+            path: url.path,
+            lines: ["key 1": "tran\ns \"lation\" \n1"]
+        )
+        print(parsed.lines.values.first!)
+        XCTAssertEqual(expected, parsed)
+    }
+    
+    private func performTestExpectingSuccessfulResult(
         fileContents: String,
         expectedLines: [String: String],
         file: StaticString = #file,
         line: UInt = #line) throws {
         // given
-                let fileContents =
-                #"""
-                /* single line comment */
-                "key 1" = "translation 1";
-
-                /* multi
-                line
-                comment */
-                "key 2" = "translation 2";
-                """#
-                setFile(with: fileContents)
-                
-                // when
-                let result = try sut.validateFileFormat(at: testFileURL)
-                            
-                // then
-                let expected = LocalizableFile(
-                    path: testFileURL.path,
-                    lines: [
-                        "key 1": "translation 1",
-                        "key 2": "translation 2"
-                    ]
-                )
-                XCTAssertEqual(expected, result)
+        setFile(with: fileContents)
+                        
+        // when
+        let result = sut.validateFileFormat(at: testFileURL)
+        
+        let parsed: LocalizableStrings
+        switch result {
+        case let .success(p):
+            parsed = p
+        case let .failure(error):
+            XCTFail((error as! LocalizedError).localizedDescription, file: file, line: line)
+            return
+        }
+                                    
+        // then
+        let expected = LocalizableStrings(
+            path: testFileURL.path,
+            lines: expectedLines
+        )
+        XCTAssertEqual(expected, parsed, file: file, line: line)
     }
     
-    private func performTestExpectingSuccessfulResult(fileContents: String) throws {
+    private func performTestExpectingFailure(fileContents: String, expectedError: Error, file: StaticString = #file, line: UInt = #line) {
         
     }
     

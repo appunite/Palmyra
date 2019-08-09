@@ -7,26 +7,23 @@
 
 import Foundation
 
-public protocol FileFormatValidator {
+protocol FileFormatValidator {
     
 }
 
-public class FileFormatValidatorImp: FileFormatValidator {
-    public init() {}
+class FileFormatValidatorImp: FileFormatValidator {
+    init() {}
     
-    public func validateFileFormat(at fileURL: URL) throws -> LocalizableFile {
-        let fileContents = try String(contentsOf: fileURL)
-        let onlyTranslationsString = removeCommentsAndEmptyLines(from: fileContents)
-        let parsedLines = try parseTranslationsString(onlyTranslationsString)
-        return LocalizableFile(
-            path: fileURL.path,
-            lines: parsedLines
-        )
+    func validateFileFormat(at fileURL: URL) -> Result<LocalizableStrings, Error> {
+        return Result(catching: { try String(contentsOf: fileURL) })
+            .map({ removeCommentsAndEmptyLines(from: $0) })
+            .flatMap({ parseTranslationsString($0) })
+            .map({ LocalizableStrings(path: fileURL.path, lines: $0) })
     }
     
     private func removeCommentsAndEmptyLines(from string: String) -> String {
         let commentsRemoved = string.replacingOccurrences(
-            of: commentsRegex,
+            of: #"\/\*(\*(?!\/)|[^*])*\*\/"#,
             with: "",
             options: .regularExpression
         )
@@ -35,13 +32,9 @@ public class FileFormatValidatorImp: FileFormatValidator {
         return newlinesRemoved
     }
     
-    private var commentsRegex: String {
-        return #"\/\*(\*(?!\/)|[^*])*\*\/"#
-    }
-    
-    private func parseTranslationsString(_ string: String) throws -> LocalizableFile.Lines {
-        var result: LocalizableFile.Lines = [:]
-        var errors: [FileFormatValidationError] = []
+    private func parseTranslationsString(_ string: String) -> Result<[Key: Translation], Error> {
+        var result = [Key: Translation]()
+        var errors = [FileFormatValidationError]()
         string.enumerateLines { lineString, _ in
             do {
                 let (key, translation) = try self.parseLine(lineString)
@@ -53,9 +46,9 @@ public class FileFormatValidatorImp: FileFormatValidator {
             }
         }
         if errors.isEmpty {
-            return result
+            return .success(result)
         } else {
-            throw CompoundValidationError(errors: errors)
+            return .failure(CompoundValidationError(errors: errors))
         }
     }
     
@@ -74,19 +67,7 @@ public class FileFormatValidatorImp: FileFormatValidator {
         return (key, translation)
     }
     
-    private lazy var translationsLineRegex: NSRegularExpression = {
-        let pattern = #"^"((?:\.|[^\"])*?)"\s=\s"((?:\.|[^\"])*?)";"#
-        return try! NSRegularExpression(pattern: pattern)
-    }()
-}
-
-private extension String {
-    var startToEndNSRange: NSRange {
-        return NSRange(startIndex..<endIndex, in: self)
-    }
-    
-    subscript(_ nsRange: NSRange) -> Substring {
-        let range = Range<String.Index>(nsRange, in: self)!
-        return self[range]
-    }
+    private let translationsLineRegex = try! NSRegularExpression(
+        pattern: #"^\"((?:\\.|[^\\"])*?)\"\s=\s\"((?:\\.|[^\\"])*?)\";"#
+    )
 }

@@ -7,10 +7,32 @@
 
 import Foundation
 
+public enum ValidationError: LocalizedError {
+    public struct MismatchedInterpolationsDescription {
+        let key: String
+        let value: String
+        let valueCountedInterpolations: CountedInterpolations
+        let referenceValue: String
+        let referenceCountedInterpolations: CountedInterpolations
+    }
+    
+    case invalidLineFormat(contents: String)
+    case mismatchedInterpolations(description: MismatchedInterpolationsDescription)
+    
+    public var errorDescription: String? {
+        switch self {
+        case let .invalidLineFormat(contents):
+            return "Line has invalid format: \(contents)"
+        case let .mismatchedInterpolations(description):
+            return ""
+        }
+    }
+}
+
 public struct FileFormatValidationError: LocalizedError {
     public let invalidLineContents: String
     
-    public var localizedDescription: String {
+    public var errorDescription: String? {
         return invalidLineContents
     }
 }
