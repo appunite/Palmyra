@@ -7,20 +7,15 @@
 
 import Foundation
 
-struct ValidationIssues {
-    var errors: [ValidationError] = []
-    var warnings: [ValidationWarning] = []
+protocol Validator {
+    func validate(translations: LocalizableStrings, reference: LocalizableStrings) -> ValidationOutput
 }
 
-protocol LocalizableStringsValidator {
-    
-}
-
-struct LocalizableStringsValidatorImp: LocalizableStringsValidator {
-    func validate(translations: [Key: Translation], reference: [Key: Translation]) -> ValidationIssues {
-        var issues = ValidationIssues()
-        var linesToValidate = translations
-        for (key, referenceValue) in reference {
+struct ValidatorImp: Validator {
+    func validate(translations: LocalizableStrings, reference: LocalizableStrings) -> ValidationOutput {
+        var issues = ValidationOutput.Issues()
+        var linesToValidate = translations.lines
+        for (key, referenceValue) in reference.lines {
             validate(
                 value: linesToValidate.removeValue(forKey: key),
                 referenceValue: referenceValue,
@@ -29,10 +24,10 @@ struct LocalizableStringsValidatorImp: LocalizableStringsValidator {
             )
         }
         appendWarnings(leftLines: linesToValidate, to: &issues)
-        return issues
+        return ValidationOutput(validatedFilePath: translations.path, issues: issues)
     }
     
-    private func validate(value: String?, referenceValue: String, key: String, issues: inout ValidationIssues) {
+    private func validate(value: String?, referenceValue: String, key: String, issues: inout ValidationOutput.Issues) {
         guard let value = value else {
             issues.warnings.append(.missingTranslation(key: key))
             return
@@ -68,7 +63,7 @@ struct LocalizableStringsValidatorImp: LocalizableStringsValidator {
         pattern: #"%(?:([1-9]\d*)\$|\(([^\)]+)\))?(\+)?(0|'[^$])?(-)?(\d+)?(?:\.(\d+))?(hh|ll|[hlLzjt])?([b-fiosuxX@])"#
     )
     
-    private func appendWarnings(leftLines: [Key: Translation], to issues: inout ValidationIssues) {
+    private func appendWarnings(leftLines: [Key: Translation], to issues: inout ValidationOutput.Issues) {
         for (key, value) in leftLines {
             issues.warnings.append(
                 .redundantTranslation(key: key, translation: value)

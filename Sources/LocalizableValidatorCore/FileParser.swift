@@ -1,20 +1,20 @@
 //
-//  FileFormatValidator.swift
-//  LocalizableValidator
+//  FileParser.swift
+//  Basic
 //
-//  Created by Łukasz Kasperek on 23/07/2019.
+//  Created by Łukasz Kasperek on 16/08/2019.
 //
 
 import Foundation
 
-protocol FileFormatValidator {
-    
+protocol FileParser {
+    func parseFile(at fileURL: URL) -> Result<LocalizableStrings, Error>
 }
 
-class FileFormatValidatorImp: FileFormatValidator {
+class FileParserImp: FileParser {
     init() {}
     
-    func validateFileFormat(at fileURL: URL) -> Result<LocalizableStrings, Error> {
+    func parseFile(at fileURL: URL) -> Result<LocalizableStrings, Error> {
         return Result(catching: { try String(contentsOf: fileURL) })
             .map({ removeCommentsAndEmptyLines(from: $0) })
             .flatMap({ parseTranslationsString($0) })
@@ -34,12 +34,12 @@ class FileFormatValidatorImp: FileFormatValidator {
     
     private func parseTranslationsString(_ string: String) -> Result<[Key: Translation], Error> {
         var result = [Key: Translation]()
-        var errors = [FileFormatValidationError]()
+        var errors = [FileParsingError]()
         string.enumerateLines { lineString, _ in
             do {
                 let (key, translation) = try self.parseLine(lineString)
                 result[key] = translation
-            } catch let error as FileFormatValidationError {
+            } catch let error as FileParsingError {
                 errors.append(error)
             } catch {
                 fatalError("Unexpected error type")
@@ -48,7 +48,7 @@ class FileFormatValidatorImp: FileFormatValidator {
         if errors.isEmpty {
             return .success(result)
         } else {
-            return .failure(CompoundValidationError(errors: errors))
+            return .failure(FileParsingError(combining: errors))
         }
     }
     
@@ -57,7 +57,7 @@ class FileFormatValidatorImp: FileFormatValidator {
             in: lineString,
             options: [],
             range: lineString.startToEndNSRange) else {
-                throw FileFormatValidationError(invalidLineContents: lineString)
+                throw FileParsingError(line: lineString)
         }
         guard match.numberOfRanges == 3 else {
             fatalError("Oops, regex needs to be checked...")
