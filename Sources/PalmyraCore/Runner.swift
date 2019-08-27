@@ -14,7 +14,7 @@ public final class Runner {
     private let arguments: [String]
     private let fileParser: FileParser
     private let validator: Validator
-    private let outputPrinter: OutputPrinter
+    private let issuePrinter: IssuePrinter
     
     public static func make() -> Runner {
         return Runner()
@@ -24,12 +24,12 @@ public final class Runner {
         arguments: [String] = CommandLine.arguments,
         fileParser: FileParser = FileParserImp(),
         validator: Validator = ValidatorImp(),
-        outputPrinter: OutputPrinter = OutputPrinterImp()
+        outputPrinter: IssuePrinter = IssuePrinterImp()
     ) {
         self.arguments = arguments
         self.fileParser = fileParser
         self.validator = validator
-        self.outputPrinter = outputPrinter
+        self.issuePrinter = outputPrinter
         parser = ArgumentParser(
             commandName: "palmyra",
             usage: "--reference <reference file path> --translations <translation file paths>",
@@ -62,10 +62,11 @@ public final class Runner {
             let translationStrings = try translationFileURLs.map(fileParser.parseFile(at:))
             for translations in translationStrings {
                 let output = validator.validate(translations: translations, reference: referenceStrings)
-                outputPrinter.printValidationOutput(output)
+                issuePrinter.printValidationOutput(output)
+                exit(output.issues.fatalsOccur ? 1 : 0)
             }
         } catch {
-            outputPrinter.printProgramFailure(error: error)
+            issuePrinter.printProgramFailure(error: error)
             exit(1)
         }
     }
