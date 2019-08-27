@@ -9,7 +9,6 @@ import Foundation
 
 typealias Key = String
 typealias Translation = String
-typealias CountedInterpolations = [String: Int]
 
 struct LocalizableStrings: Equatable {    
     let path: String
@@ -19,21 +18,6 @@ struct LocalizableStrings: Equatable {
 struct ValidationOutput {
     let validatedFilePath: String
     let issues: [ValidationIssue]
-}
-
-extension Collection where Element == ValidationIssue {
-    var fatalsOccur: Bool {
-        return contains(where: { $0.isFatal })
-    }
-    
-    func splitIntoFatalsAndWarnings() -> ([ValidationIssue], [ValidationIssue]) {
-        var fatals = [ValidationIssue]()
-        var warnings = [ValidationIssue]()
-        for issue in self {
-            issue.isFatal ? fatals.append(issue) : warnings.append(issue)
-        }
-        return (fatals, warnings)
-    }
 }
 
 enum ValidationIssue: LocalizedError, Equatable {
@@ -73,20 +57,63 @@ enum ValidationIssue: LocalizedError, Equatable {
     }
 }
 
+extension Collection where Element == ValidationIssue {
+    var fatalsOccur: Bool {
+        return contains(where: { $0.isFatal })
+    }
+    
+    func splitIntoFatalsAndWarnings() -> ([ValidationIssue], [ValidationIssue]) {
+        var fatals = [ValidationIssue]()
+        var warnings = [ValidationIssue]()
+        for issue in self {
+            issue.isFatal ? fatals.append(issue) : warnings.append(issue)
+        }
+        return (fatals, warnings)
+    }
+}
+
+struct FileURLFormingError: LocalizedError {
+    enum StringsFileType {
+        case reference, translation
+    }
+    enum Reason {
+        case missingPath, missingFile(String)
+    }
+    
+    let fileType: StringsFileType
+    let reason: Reason
+    
+    var errorDescription: String? {
+        switch (fileType, reason) {
+        case (.reference, .missingPath):
+            return "Missing reference file path"
+        case (.reference, let .missingFile(path)):
+            return "Reference file at \(path) doesn't exist"
+        case (.translation, .missingPath):
+            return "Missing translations file paths"
+        case (.translation, let .missingFile(path)):
+            return "Translation file at \(path) doesn't exist"
+        }
+    }
+}
+
 struct FileParsingError: LocalizedError, Equatable {
+    let filePath: String
     let corruptedLines: [String]
     
-    init(line: String) {
+    init(line: String, filePath: String) {
         corruptedLines = [line]
+        self.filePath = filePath
     }
     
     init(combining errors: [FileParsingError]) {
+        self.filePath = errors.first!.filePath
         corruptedLines = errors.reduce(into: [String]()) {
             $0.append(contentsOf: $1.corruptedLines)
         }
     }
     
     var errorDescription: String? {
-        return "File parsing failed due to lines:\n" + corruptedLines.joined(separator: "\n")
+        return "File at \(filePath) parsing failed due to lines:\n" + corruptedLines.joined(separator: "\n")
     }
 }

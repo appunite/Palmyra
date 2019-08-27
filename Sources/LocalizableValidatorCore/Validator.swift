@@ -45,7 +45,7 @@ struct ValidatorImp: Validator {
         }
     }
     
-    private func countedInterpolations(in string: String) -> CountedInterpolations {
+    private func countedInterpolations(in string: String) -> [String: Int] {
         let matches = interpolationsRegex.matches(
             in: string,
             options: [], range:
@@ -69,7 +69,7 @@ struct ValidatorImp: Validator {
 }
 
 private extension Array where Element == String {
-    func elementCounts() -> CountedInterpolations {
+    func elementCounts() -> [String: Int] {
         return reduce(into: [String: Int]()) { result, element in
             result[element] = (result[element] ?? 0) + 1
         }

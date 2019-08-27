@@ -8,8 +8,8 @@ import Foundation
 import Basic
 
 protocol OutputPrinter {
+    func printProgramFailure(error: Error)
     func printValidationOutput(_ output: ValidationOutput)
-//    func printFileParsingError(_ error: FileParsingError)
 }
 
 struct OutputPrinterImp: OutputPrinter {
@@ -17,6 +17,11 @@ struct OutputPrinterImp: OutputPrinter {
     
     init() {
         tc = TerminalController(stream: stdoutStream)!
+    }
+    
+    func printProgramFailure(error: Error) {
+        tc.write("ERROR: ", inColor: .red, bold: true)
+        tc.write(error.localizedDescription, inColor: .red)
     }
     
     func printValidationOutput(_ output: ValidationOutput) {
@@ -27,7 +32,9 @@ struct OutputPrinterImp: OutputPrinter {
             printFailedValidationMessage(for: output.validatedFilePath)
             printFatalIssues(fatals)
         }
-        printWarnings(warnings)
+        if warnings.isEmpty == false {
+            printWarnings(warnings)
+        }
     }
     
     private func printSuccessfulValidationMessage(for filePath: String) {
@@ -57,7 +64,7 @@ struct OutputPrinterImp: OutputPrinter {
         tc.write("\(title):", inColor: color, bold: true)
         tc.endLine()
         for (number, issue) in issues.enumerated() {
-            tc.write("\(number). ", inColor: color)
+            tc.write("\(number + 1). ", inColor: color)
             tc.write(issue.localizedDescription, inColor: color)
             tc.endLine()
         }

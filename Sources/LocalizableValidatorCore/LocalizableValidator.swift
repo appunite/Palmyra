@@ -9,7 +9,7 @@ import Foundation
 import SPMUtility
 
 public protocol LocalizableValidator {
-    func run() throws
+    func run()
 }
 
 class LocalizableValidatorImp: LocalizableValidator {
@@ -53,23 +53,43 @@ class LocalizableValidatorImp: LocalizableValidator {
         )
     }
     
-    func run() throws {
+    func run() {
         let arguments = Array(CommandLine.arguments.dropFirst())
-        let result = try parser.parse(arguments)
-        guard let referenceFileURL = result.get(referenceFilePath).map(URL.init(fileURLWithPath:)) else {
+        do {
+            let result = try parser.parse(arguments)
+            let referenceFileURL = try makeReferenceFileURL(from: result.get(referenceFilePath))
+            let translationFileURLs = try makeTranslationFileURLs(from: result.get(translationFilePaths))
+            let referenceStrings = try fileParser.parseFile(at: referenceFileURL)
+            let translationStrings = try translationFileURLs.map(fileParser.parseFile(at:))
+            for translations in translationStrings {
+                let output = validator.validate(translations: translations, reference: referenceStrings)
+                outputPrinter.printValidationOutput(output)
+            }
+        } catch {
+            outputPrinter.printProgramFailure(error: error)
             exit(1)
         }
-        guard let translationFileURLs = result.get(translationFilePaths)?.map(URL.init(fileURLWithPath:)) else {
-            exit(1)
+    }
+    
+    private func makeReferenceFileURL(from maybeString: String?) throws -> Foundation.URL {
+        guard let path = maybeString else {
+            throw FileURLFormingError(fileType: .reference, reason: .missingPath)
         }
-//        switch fileParser.parseFile(at: referenceFileURL) {
-//        case let .success(referenceStrings):
-//
-//        case let .failure(error):
-//
-//        }
-//        guard case let .success(referenceStrings) = referenceFileParsingResult else {
-//            referenceFileParsingResult.
-//        }
+        guard FileManager.default.fileExists(atPath: path) else {
+            throw FileURLFormingError(fileType: .reference, reason: .missingFile(path))
+        }
+        return URL(fileURLWithPath: path)
+    }
+    
+    private func makeTranslationFileURLs(from maybeStrings: [String]?) throws -> [Foundation.URL] {
+        guard let paths = maybeStrings else {
+            throw FileURLFormingError(fileType: .translation, reason: .missingPath)
+        }
+        return try paths.map({ path in
+            guard FileManager.default.fileExists(atPath: path) else {
+                throw FileURLFormingError(fileType: .translation, reason: .missingFile(path))
+            }
+            return URL(fileURLWithPath: path)
+        })
     }
 }

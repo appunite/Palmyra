@@ -8,17 +8,17 @@
 import Foundation
 
 protocol FileParser {
-    func parseFile(at fileURL: URL) -> Result<LocalizableStrings, Error>
+    func parseFile(at fileURL: URL) throws -> LocalizableStrings
 }
 
 class FileParserImp: FileParser {
     init() {}
     
-    func parseFile(at fileURL: URL) -> Result<LocalizableStrings, Error> {
-        return Result(catching: { try String(contentsOf: fileURL) })
-            .map({ removeCommentsAndEmptyLines(from: $0) })
-            .flatMap({ parseTranslationsString($0) })
-            .map({ LocalizableStrings(path: fileURL.path, lines: $0) })
+    func parseFile(at fileURL: URL) throws -> LocalizableStrings {
+        let fileContents = try String(contentsOf: fileURL)
+        let commentAndEmptylinesStrippedContents = removeCommentsAndEmptyLines(from: fileContents)
+        let lines = try parseTranslationsString(commentAndEmptylinesStrippedContents, filePath: fileURL.path)
+        return LocalizableStrings(path: fileURL.path, lines: lines)
     }
     
     private func removeCommentsAndEmptyLines(from string: String) -> String {
@@ -32,12 +32,12 @@ class FileParserImp: FileParser {
         return newlinesRemoved
     }
     
-    private func parseTranslationsString(_ string: String) -> Result<[Key: Translation], Error> {
+    private func parseTranslationsString(_ string: String, filePath: String) throws -> [Key: Translation] {
         var result = [Key: Translation]()
         var errors = [FileParsingError]()
         string.enumerateLines { lineString, _ in
             do {
-                let (key, translation) = try self.parseLine(lineString)
+                let (key, translation) = try self.parseLine(lineString, filePath: filePath)
                 result[key] = translation
             } catch let error as FileParsingError {
                 errors.append(error)
@@ -46,18 +46,18 @@ class FileParserImp: FileParser {
             }
         }
         if errors.isEmpty {
-            return .success(result)
+            return result
         } else {
-            return .failure(FileParsingError(combining: errors))
+            throw FileParsingError(combining: errors)
         }
     }
     
-    private func parseLine(_ lineString: String) throws -> (String, String) {
+    private func parseLine(_ lineString: String, filePath: String) throws -> (String, String) {
         guard let match = translationsLineRegex.firstMatch(
             in: lineString,
             options: [],
             range: lineString.startToEndNSRange) else {
-                throw FileParsingError(line: lineString)
+                throw FileParsingError(line: lineString, filePath: filePath)
         }
         guard match.numberOfRanges == 3 else {
             fatalError("Oops, regex needs to be checked...")
