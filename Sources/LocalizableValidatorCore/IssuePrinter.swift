@@ -9,6 +9,7 @@ import Basic
 
 protocol OutputPrinter {
     func printValidationOutput(_ output: ValidationOutput)
+//    func printFileParsingError(_ error: FileParsingError)
 }
 
 struct OutputPrinterImp: OutputPrinter {
@@ -18,22 +19,15 @@ struct OutputPrinterImp: OutputPrinter {
         tc = TerminalController(stream: stdoutStream)!
     }
     
-    func printSth() {
-        tc.write("Siusiak", inColor: .red, bold: true)
-        tc.write("Siusiak", inColor: .red, bold: false)
-        tc.endLine()
-        tc.write("Siusiak", inColor: .green, bold: true)
-        tc.write("Siusiak", inColor: .green, bold: false)
-    }
-    
     func printValidationOutput(_ output: ValidationOutput) {
-        if output.isValid {
+        let (fatals, warnings) = output.issues.splitIntoFatalsAndWarnings()
+        if fatals.isEmpty {
             printSuccessfulValidationMessage(for: output.validatedFilePath)
         } else {
             printFailedValidationMessage(for: output.validatedFilePath)
-            output.issues.errors.forEach { printValidationError($0) }
+            printFatalIssues(fatals)
         }
-        output.issues.warnings.forEach { printValidationWarning($0) }
+        printWarnings(warnings)
     }
     
     private func printSuccessfulValidationMessage(for filePath: String) {
@@ -48,29 +42,24 @@ struct OutputPrinterImp: OutputPrinter {
         tc.endLine()
     }
     
-    private func printValidationError(_ error: ValidationError) {
-        tc.write("ERROR: ", inColor: .red, bold: true)
-        switch error {
-        case let .invalidLineFormat(contents):
-            tc.write("invalid line format \"\(contents)\"", inColor: .red)
-        case let .mismatchedInterpolations(description):
-            tc.write("interpolations do not match for key \"\(description.key)\"")
-            tc.endLine()
-            tc.write("\tReference: \"\(description.referenceValue)\"", inColor: .red)
-            tc.endLine()
-            tc.write("\tTranslation: \"\(description.value)\"", inColor: .red)
-        }
-        tc.endLine()
+    private func printFatalIssues(_ issues: [ValidationIssue]) {
+        printIssues(issues, title: "ERRORS", color: .red)
     }
     
-    private func printValidationWarning(_ warning: ValidationWarning) {
-        tc.write("WARNING: ", inColor: .yellow, bold: true)
-        switch warning {
-        case let .missingTranslation(key):
-            tc.write("missing translation for key \"\(key)\"", inColor: .yellow)
-        case let .redundantTranslation(key, translation):
-            tc.write("redundant translation \"\(translation)\" for key \"\(key)\"", inColor: .yellow)
-        }
+    private func printWarnings(_ issues: [ValidationIssue]) {
+        printIssues(issues, title: "WARNINGS", color: .yellow)
+    }
+    
+    private func printIssues(
+        _ issues: [ValidationIssue], title: String,
+        color: TerminalController.Color
+    ) {
+        tc.write("\(title):", inColor: color, bold: true)
         tc.endLine()
+        for (number, issue) in issues.enumerated() {
+            tc.write("\(number). ", inColor: color)
+            tc.write(issue.localizedDescription, inColor: color)
+            tc.endLine()
+        }
     }
 }

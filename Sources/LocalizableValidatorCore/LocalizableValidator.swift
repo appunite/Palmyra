@@ -62,14 +62,14 @@ class LocalizableValidatorImp: LocalizableValidator {
         guard let translationFileURLs = result.get(translationFilePaths)?.map(URL.init(fileURLWithPath:)) else {
             exit(1)
         }
-        switch fileParser.parseFile(at: referenceFileURL) {
-        case let .success(referenceStrings):
-            
-        case let .failure(error):
-            
-        }
-        guard case let .success(referenceStrings) = referenceFileParsingResult else {
-            referenceFileParsingResult.
-        }
+//        switch fileParser.parseFile(at: referenceFileURL) {
+//        case let .success(referenceStrings):
+//
+//        case let .failure(error):
+//
+//        }
+//        guard case let .success(referenceStrings) = referenceFileParsingResult else {
+//            referenceFileParsingResult.
+//        }
     }
 }

@@ -30,7 +30,6 @@ class ValidatorTests: XCTestCase {
         let output = sut.validate(translations: translations, reference: reference)
         
         // then
-        XCTAssert(output.isValid)
         XCTAssert(output.issues.isEmpty)
     }
     
@@ -55,14 +54,12 @@ class ValidatorTests: XCTestCase {
         let issues = sut.validate(translations: translations, reference: reference).issues
         
         // then
-        let expectedError = ValidationError.mismatchedInterpolations(description: .init(
+        let expectedError = ValidationIssue.mismatchedInterpolations(description: .init(
             key: "key",
             value: "Translation without interpolation",
-            valueCountedInterpolations: [:],
-            referenceValue: "Reference with %@",
-            referenceCountedInterpolations: ["%@": 1]
-            ))
-        XCTAssertEqual([expectedError], issues.errors)
+            referenceValue: "Reference with %@"
+        ))
+        XCTAssertEqual([expectedError], issues)
     }
     
     func testValidation_whenTranslationsHasMoreStrings_shouldWarnAboutRedundantTranslations() {
@@ -75,9 +72,10 @@ class ValidatorTests: XCTestCase {
         
         // then
         XCTAssertEqual(
-            output.issues.warnings,
+            output.issues,
             [.redundantTranslation(key: "redundant key", translation: "translation")]
         )
+        XCTAssertFalse(output.issues.fatalsOccur)
     }
     
     func testValidation_whenTranslationIsMissing_shouldGenerateWarning() {
@@ -90,9 +88,10 @@ class ValidatorTests: XCTestCase {
         
         // then
         XCTAssertEqual(
-            output.issues.warnings,
+            output.issues,
             [.missingTranslation(key: "other key")]
         )
+        XCTAssertFalse(output.issues.fatalsOccur)
     }
     
     func testValidationOutput_shouldHaveTranslationsFilePath() {
@@ -105,12 +104,6 @@ class ValidatorTests: XCTestCase {
         
         // then
         XCTAssertEqual(output.validatedFilePath, translations.path)
-    }
-}
-
-private extension ValidationOutput.Issues {
-    var isEmpty: Bool {
-        return errors.isEmpty && warnings.isEmpty
     }
 }
 

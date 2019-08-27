@@ -13,7 +13,7 @@ protocol Validator {
 
 struct ValidatorImp: Validator {
     func validate(translations: LocalizableStrings, reference: LocalizableStrings) -> ValidationOutput {
-        var issues = ValidationOutput.Issues()
+        var issues = [ValidationIssue]()
         var linesToValidate = translations.lines
         for (key, referenceValue) in reference.lines {
             validate(
@@ -27,23 +27,21 @@ struct ValidatorImp: Validator {
         return ValidationOutput(validatedFilePath: translations.path, issues: issues)
     }
     
-    private func validate(value: String?, referenceValue: String, key: String, issues: inout ValidationOutput.Issues) {
+    private func validate(value: String?, referenceValue: String, key: String, issues: inout [ValidationIssue]) {
         guard let value = value else {
-            issues.warnings.append(.missingTranslation(key: key))
+            issues.append(.missingTranslation(key: key))
             return
         }
         let referenceCountedInterpolations = countedInterpolations(in: referenceValue)
         let valueCountedInterpolations = countedInterpolations(in: value)
         if referenceCountedInterpolations != valueCountedInterpolations {
-            let description = ValidationError.MismatchedInterpolationsDescription(
+            let description = ValidationIssue.MismatchedInterpolationsDescription(
                 key: key,
                 value: value,
-                valueCountedInterpolations: valueCountedInterpolations,
-                referenceValue: referenceValue,
-                referenceCountedInterpolations: referenceCountedInterpolations
+                referenceValue: referenceValue
             )
-            let error = ValidationError.mismatchedInterpolations(description: description)
-            issues.errors.append(error)
+            let error = ValidationIssue.mismatchedInterpolations(description: description)
+            issues.append(error)
         }
     }
     
@@ -63,11 +61,9 @@ struct ValidatorImp: Validator {
         pattern: #"%(?:([1-9]\d*)\$|\(([^\)]+)\))?(\+)?(0|'[^$])?(-)?(\d+)?(?:\.(\d+))?(hh|ll|[hlLzjt])?([b-fiosuxX@])"#
     )
     
-    private func appendWarnings(leftLines: [Key: Translation], to issues: inout ValidationOutput.Issues) {
+    private func appendWarnings(leftLines: [Key: Translation], to issues: inout [ValidationIssue]) {
         for (key, value) in leftLines {
-            issues.warnings.append(
-                .redundantTranslation(key: key, translation: value)
-            )
+            issues.append(.redundantTranslation(key: key, translation: value))
         }
     }
 }
