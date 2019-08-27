@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import LocalizableValidatorCore
+@testable import PalmyraCore
 
 class ValidatorTests: XCTestCase {
     var sut: ValidatorImp!

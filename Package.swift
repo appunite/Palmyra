@@ -3,22 +3,22 @@
 import PackageDescription
 
 let package = Package(
-    name: "LocalizableValidator",
+    name: "Palmyra",
     platforms: [.macOS(.v10_14)],
     dependencies: [
         .package(url: "https://github.com/apple/swift-package-manager.git", from: "0.4.0"),
     ],
     targets: [
         .target(
-            name: "LocalizableValidator",
-            dependencies: ["LocalizableValidatorCore"]
+            name: "Palmyra",
+            dependencies: ["PalmyraCore"]
         ),
         .target(
-            name: "LocalizableValidatorCore",
+            name: "PalmyraCore",
             dependencies: ["SPMUtility"]
         ),
         .testTarget(
-            name: "LocalizableValidatorTests",
-            dependencies: ["LocalizableValidatorCore", "SPMUtility"])
+            name: "PalmyraTests",
+            dependencies: ["PalmyraCore", "SPMUtility"])
     ]
 )

@@ -1,6 +1,5 @@
 //
-//  LocalizableValidator.swift
-//  Basic
+//  Runner.swift
 //
 //  Created by Łukasz Kasperek on 12/08/2019.
 //
@@ -8,11 +7,7 @@
 import Foundation
 import SPMUtility
 
-public protocol LocalizableValidator {
-    func run()
-}
-
-class LocalizableValidatorImp: LocalizableValidator {
+public final class Runner {
     private let parser: ArgumentParser
     private let referenceFilePath: OptionArgument<String>
     private let translationFilePaths: OptionArgument<[String]>
@@ -20,6 +15,10 @@ class LocalizableValidatorImp: LocalizableValidator {
     private let fileParser: FileParser
     private let validator: Validator
     private let outputPrinter: OutputPrinter
+    
+    public static func make() -> Runner {
+        return Runner()
+    }
     
     init(
         arguments: [String] = CommandLine.arguments,
@@ -32,8 +31,8 @@ class LocalizableValidatorImp: LocalizableValidator {
         self.validator = validator
         self.outputPrinter = outputPrinter
         parser = ArgumentParser(
-            commandName: "hancock",
-            usage: "<options> [paths ...]",
+            commandName: "palmyra",
+            usage: "--reference <reference file path> --translations <translation file paths>",
             overview: "Validate your Localizable.strings files",
             seeAlso: nil
         )
@@ -41,19 +40,19 @@ class LocalizableValidatorImp: LocalizableValidator {
             option: "--reference",
             shortName: "-r",
             kind: String.self,
-            usage: "Path to the file with reference translation (most probably Localizable.strings file from Base.lproj or en.lproj folder)",
+            usage: "path to the file with reference strings (most probably english Localizable.strings file from Base.lproj or en.lproj folders)",
             completion: .filename
         )
         translationFilePaths = parser.add(
             option: "--translations",
             shortName: "-t",
             kind: [String].self,
-            usage: "Paths to all of the translated Localizable.strings files",
+            usage: "paths to all of the translated Localizable.strings files",
             completion: .filename
         )
     }
     
-    func run() {
+    public func run() {
         let arguments = Array(CommandLine.arguments.dropFirst())
         do {
             let result = try parser.parse(arguments)

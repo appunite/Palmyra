@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import LocalizableValidatorCore
+@testable import PalmyraCore
 
 class FileParserTests: XCTestCase {
     var sut: FileParserImp!
@@ -108,19 +108,7 @@ class FileParserTests: XCTestCase {
         setFile(with: fileContents)
                         
         // when
-        let result = sut.parseFile(at: testFileURL)
-        
-        let parsed: LocalizableStrings
-        switch result {
-        case let .success(p):
-            parsed = p
-        case let .failure(error):
-            XCTFail("Unexpectedly error was thrown: \(error)",
-                    file: file,
-                    line: line
-            )
-            return
-        }
+        let parsed = try sut.parseFile(at: testFileURL)
                                     
         // then
         let expected = LocalizableStrings(
@@ -138,7 +126,7 @@ class FileParserTests: XCTestCase {
         performTestExpectingFailure(fileContents: fileContents, errorAsserts: { error in
             assertEqual(
                 error: error,
-                parsingError: FileParsingError(line: #""key" = "translation""#)
+                parsingError: FileParsingError(line: #""key" = "translation""#, filePath: testFileURL.path)
             )
         })
     }
@@ -153,7 +141,7 @@ class FileParserTests: XCTestCase {
         performTestExpectingFailure(fileContents: fileContents, errorAsserts: { error in
             assertEqual(
                 error: error,
-                parsingError: FileParsingError(line: #"/* comment"#)
+                parsingError: FileParsingError(line: #"/* comment"#, filePath: testFileURL.path)
             )
         })
     }
@@ -166,7 +154,7 @@ class FileParserTests: XCTestCase {
         performTestExpectingFailure(fileContents: fileContents, errorAsserts: { error in
             assertEqual(
                 error: error,
-                parsingError: FileParsingError(line: #""key" = "tran"slation";"#)
+                parsingError: FileParsingError(line: #""key" = "tran"slation";"#, filePath: testFileURL.path)
             )
         })
     }
@@ -180,20 +168,8 @@ class FileParserTests: XCTestCase {
         // given
         setFile(with: fileContents)
         
-        // when
-        let result = sut.parseFile(at: testFileURL)
-        
         // then
-        switch result {
-        case let .success(strings):
-            XCTFail(
-                """
-                Parser unexpectedly succeded
-                Parsed strings:
-                \(strings)
-                """
-            )
-        case let .failure(error):
+        XCTAssertThrowsError(try sut.parseFile(at: testFileURL)) { error in
             errorAsserts(error)
         }
     }
