@@ -7,7 +7,6 @@
 
 import Foundation
 
-// sourcery: AutoMockable
 protocol Validator {
     func validate(translations: LocalizableStrings, reference: LocalizableStrings) -> ValidationOutput
 }

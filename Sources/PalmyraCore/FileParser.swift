@@ -7,7 +7,6 @@
 
 import Foundation
 
-// sourcery: AutoMockable
 protocol FileParser {
     func parseFile(at fileURL: URL) throws -> LocalizableStrings
 }

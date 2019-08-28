@@ -7,7 +7,6 @@
 import Foundation
 import Basic
 
-// sourcery: AutoMockable
 protocol IssuePrinter {
     func printProgramFailure(error: Error)
     func printValidationOutput(_ output: ValidationOutput)

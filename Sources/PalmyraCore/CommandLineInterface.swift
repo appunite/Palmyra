@@ -7,7 +7,6 @@
 import Foundation
 import SPMUtility
 
-// sourcery: AutoMockable
 protocol CommandLineInterface {
     func process(arguments: [String]) throws -> (Foundation.URL, [Foundation.URL])
 }
