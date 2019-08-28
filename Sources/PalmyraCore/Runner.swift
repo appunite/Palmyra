@@ -11,6 +11,7 @@ public final class Runner {
     private let fileParser: FileParser
     private let validator: Validator
     private let issuePrinter: IssuePrinter
+    private let exit: (Int32) -> ()
     
     public static func make() -> Runner {
         return Runner()
@@ -20,12 +21,14 @@ public final class Runner {
         commandLineInterface: CommandLineInterface = CommandLineInterfaceImp(),
         fileParser: FileParser = FileParserImp(),
         validator: Validator = ValidatorImp(),
-        issuePrinter: IssuePrinter = IssuePrinterImp()
+        issuePrinter: IssuePrinter = IssuePrinterImp(),
+        exit: @escaping (Int32) -> () = { code in Darwin.exit(code) }
     ) {
         self.commandLineInterface = commandLineInterface
         self.fileParser = fileParser
         self.validator = validator
         self.issuePrinter = issuePrinter
+        self.exit = exit
     }
     
     public func run(arguments: [String]) {
