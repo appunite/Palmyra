@@ -1,0 +1,155 @@
+{% macro trimTypeName type %}{% if type|annotated:"name" %}{{ type.annotations.name }}{% else %}{{ type.name|replace:"Type","" }}{% endif %}{% endmacro %}
+{% macro fileName type %}{% if type|annotated:"name" %}{{ type.annotations.name|replace:".","" }}{% else %}{{ type.name|replace:"Type","" }}{% endif %}{% endmacro %}
+
+{% macro swiftifyMethodName name %}{{ name | replace:"(","_" | replace:")","" | replace:":","_" | replace:"`","" | snakeToCamelCase | lowerFirstWord }}{% endmacro %}
+
+{% macro superInit method %}{% if method.throws %}try {% endif %}super.init({% for param in method.parameters %}{{ param.argumentLabel }}: {% if param.isOptional %}nil{% else %}{{ param.name }}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}){% endmacro %}
+
+{% macro methodThrowableErrorDeclaration method %}
+    var {% call swiftifyMethodName method.selectorName %}ThrowableError: Error?
+{% endmacro %}
+
+{% macro methodThrowableErrorUsage method %}
+        if let error = {% call swiftifyMethodName method.selectorName %}ThrowableError {
+            throw error
+        }
+{% endmacro %}
+
+{% macro methodReceivedParameters method %}
+    {% if method.parameters.count == 1 %}
+    {% if not method.parameters.first.typeName.isClosure or method.parameters.first.typeAttributes.escaping %}
+        {% call swiftifyMethodName method.selectorName %}Received{% for param in method.parameters %}{{ param.name|upperFirstLetter }} = {{ param.name }}{% endfor %}
+    {% endif %}
+    {% else %}
+    {% if not method.parameters.count == 0 %}
+        {% call swiftifyMethodName method.selectorName %}ReceivedArguments = ({% for param in method.parameters %}{{ param.name }}: {{ param.name }}{% if not forloop.last %}, {% endif %}{% endfor %})
+    {% endif %}
+    {% endif %}
+{% endmacro %}
+
+{% macro methodClosureName method %}{% call swiftifyMethodName method.selectorName %}Closure{% endmacro %}
+
+{% macro methodClosureDeclaration method %}
+    var {% call methodClosureName method %}: (({% for param in method.parameters %}{{ param.typeName }}{% if not forloop.last %}, {% endif %}{% endfor %}) {% if method.throws %}throws {% endif %}-> {% if method.isInitializer %}Void{% else %}{{ method.returnTypeName }}{% endif %})?
+{% endmacro %}
+
+{% macro methodClosureCallParameters method %}{% for param in method.parameters %}{{ param.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endmacro %}
+
+{% macro mockMethod method typeAnnotations %}
+    //MARK: - {{ method.shortName }}
+
+    {% if method.throws %}
+        {% call methodThrowableErrorDeclaration method %}
+    {% endif %}
+    {% if not method.isInitializer %}
+    var {% call swiftifyMethodName method.selectorName %}CallsCount = 0
+    var {% call swiftifyMethodName method.selectorName %}Called: Bool {
+        return {% call swiftifyMethodName method.selectorName %}CallsCount > 0
+    }
+    {% endif %}
+    {% if method.parameters.count == 1 %}
+    {% if not method.parameters.first.typeName.isClosure or method.parameters.first.typeAttributes.escaping %}
+    var {% call swiftifyMethodName method.selectorName %}Received{% for param in method.parameters %}{{ param.name|upperFirstLetter }}: {% if param.isClosure %}({% endif %}{{ param.typeName.unwrappedTypeName }}{% if param.isClosure %}){% endif %}?{% endfor %}
+    {% endif %}
+    {% else %}
+    {% if not method.parameters.count == 0 %}
+    var {% call swiftifyMethodName method.selectorName %}ReceivedArguments: ({% for param in method.parameters %}{{ param.name }}: {% if param.typeAttributes.escaping %}{{ param.unwrappedTypeName }}{% else %}{{ param.typeName }}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %})?
+    {% endif %}
+    {% endif %}
+    {% if not method.returnTypeName.isVoid and not method.isInitializer %}
+    var {% call swiftifyMethodName method.selectorName %}ReturnValue: {{ method.returnTypeName }}{% if not method.isOptionalReturnType %}!{% endif %}
+    {% endif %}
+    {% call methodClosureDeclaration method %}
+
+    {{ method.annotations.attribute }}
+{% if method.isInitializer %}
+    {% if typeAnnotations.override %}override {% elif typeAnnotations.objc %}{% else %}required {% endif %}{{ method.name }}{% if method.throws %} throws{% endif %} {
+        {% call methodReceivedParameters method %}
+        {% if method.throws %}try {% endif %}{% call methodClosureName method %}?({% call methodClosureCallParameters method %})
+        {% if typeAnnotations.override %}{% call superInit method %}{% endif %}
+    }
+{% else %}
+{% if not method|annotated:"swizzled" %}
+    {% if typeAnnotations.override %}override {% endif %}func {{ method.name }}{% if method.throws %} throws{% endif %}{% if not method.returnTypeName.isVoid %} -> {{ method.returnTypeName }}{% endif %} {
+        {% if method.throws %}
+        {% call methodThrowableErrorUsage method %}
+        {% endif %}
+        {% call swiftifyMethodName method.selectorName %}CallsCount += 1
+        {% call methodReceivedParameters method %}
+        {% if method.returnTypeName.isVoid %}
+        {% if method.throws %}try {% endif %}{% call methodClosureName method %}?({% call methodClosureCallParameters method %})
+        {% else %}
+        return {% if method.throws %}try {% endif %}{% call methodClosureName method %}.map({ {% if method.throws %}try {% endif %}$0({% call methodClosureCallParameters method %}) }) ?? {% call swiftifyMethodName method.selectorName %}ReturnValue
+        {% endif %}
+    }
+
+{% endif %}
+{% endif %}
+{% endmacro %}
+
+{% macro mockOptionalVariable variable typeAnnotations %}
+    {% if typeAnnotations.override %}
+    override var {% call mockedVariableName variable %}: {{ variable.typeName }} {
+        get { return {% call underlyingMockedVariableName variable %} }
+        set(value) { {% call underlyingMockedVariableName variable %} = value }
+    }
+    var {% call underlyingMockedVariableName variable %}: {{ variable.typeName }}
+    {% else %}
+    var {% call mockedVariableName variable %}: {{ variable.typeName }}
+    {% endif %}
+{% endmacro %}
+
+{% macro mockNonOptionalArrayOrDictionaryVariable variable typeAnnotations %}
+    {% if typeAnnotations.override %}
+    override var {% call mockedVariableName variable %}: {{ variable.typeName }} {
+        get { return {% call underlyingMockedVariableName variable %} }
+        set(value) { {% call underlyingMockedVariableName variable %} = value }
+    }
+    var {% call underlyingMockedVariableName variable %}: {{ variable.typeName }} = {% if variable.isArray %}[]{% elif variable.isDictionary %}[:]{% endif %}
+    {% else %}
+    var {% call mockedVariableName variable %}: {{ variable.typeName }} = {% if variable.isArray %}[]{% elif variable.isDictionary %}[:]{% endif %}
+    {% endif %}
+{% endmacro %}
+
+{% macro mockNonOptionalVariable variable typeAnnotations %}
+    {% if typeAnnotations.override %}override {% endif %}var {% call mockedVariableName variable %}: {{ variable.typeName }} {
+        get { return {% call underlyingMockedVariableName variable %} }
+        set(value) { {% call underlyingMockedVariableName variable %} = value }
+    }
+    var {% call underlyingMockedVariableName variable %}: {{ variable.typeName }}!
+{% endmacro %}
+
+{% macro mockAnnotatedVariable variable typeAnnotations %}
+    {% if typeAnnotations.override %}override {% endif %}var {% call mockedVariableName variable %}: {{ variable.typeName }} {
+        get { return {% call underlyingMockedVariableName variable %} }
+        set(value) { {% call underlyingMockedVariableName variable %} = value }
+    }
+    var {% call underlyingMockedVariableName variable %}: {{ variable.typeName }} = {{ variable.annotations.defaultValue }}
+{% endmacro %}
+
+{% macro underlyingMockedVariableName variable %}underlying{{ variable.name|upperFirstLetter }}{% endmacro %}
+{% macro mockedVariableName variable %}{{ variable.name }}{% endmacro %}
+
+    import Foundation
+    @testable import PalmyraCore
+
+{% for type in types.protocols where type|annotated:"AutoMockable" %}
+
+// sourcery:inline:{{ type.name }}.AutoMockable
+{% if type|annotated:"objc" %}@objcMembers {% endif %}class {% call trimTypeName type %}Mock: {% if type|annotated:"objc" %}NSObject{% else %}{% call trimTypeName type %}{% if type.annotations.swizzled %}, {{ type.annotations.swizzled }}{% endif %}{% endif %} {
+    {% for variable in type.allVariables|!definedInExtension %}
+        {% if variable|annotated:"defaultValue" %}{% call mockAnnotatedVariable variable type.annotations %}{% elif variable.isOptional %}{% call mockOptionalVariable variable type.annotations %}{% elif variable.isArray or variable.isDictionary %}{% call mockNonOptionalArrayOrDictionaryVariable variable type.annotations %}{% else %}{% call mockNonOptionalVariable variable type.annotations %}{% endif %}
+    {% endfor %}
+    
+    {% for method in type.allMethods|!definedInExtension %}
+        {% call mockMethod method type.annotations %}
+    {% endfor %}
+
+    {% if type|annotated:"objc" %}
+    func unsafelyCastToMockedType() -> {% call trimTypeName type %} {
+        return unsafeBitCast(self, to: {% call trimTypeName type %}.self)
+    }
+    {% endif %}
+}
+// sourcery:end
+{% endfor %}
