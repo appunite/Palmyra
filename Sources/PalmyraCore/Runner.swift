@@ -24,12 +24,12 @@ public final class Runner {
         arguments: [String] = CommandLine.arguments,
         fileParser: FileParser = FileParserImp(),
         validator: Validator = ValidatorImp(),
-        outputPrinter: IssuePrinter = IssuePrinterImp()
+        issuePrinter: IssuePrinter = IssuePrinterImp()
     ) {
         self.arguments = arguments
         self.fileParser = fileParser
         self.validator = validator
-        self.issuePrinter = outputPrinter
+        self.issuePrinter = issuePrinter
         parser = ArgumentParser(
             commandName: "palmyra",
             usage: "--reference <reference file path> --translations <translation file paths>",

@@ -130,8 +130,8 @@
 {% macro underlyingMockedVariableName variable %}underlying{{ variable.name|upperFirstLetter }}{% endmacro %}
 {% macro mockedVariableName variable %}{{ variable.name }}{% endmacro %}
 
-    import Foundation
-    @testable import PalmyraCore
+import Foundation
+@testable import PalmyraCore
 
 {% for type in types.protocols where type|annotated:"AutoMockable" %}
 

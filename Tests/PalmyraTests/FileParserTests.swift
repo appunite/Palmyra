@@ -10,11 +10,6 @@ import XCTest
 
 class FileParserTests: XCTestCase {
     var sut: FileParserImp!
-    let fileManager = FileManager.default
-    var testFileURL: URL {
-        return fileManager.temporaryDirectory
-            .appendingPathComponent("Localizable.strings")
-    }
 
     override func setUp() {
         super.setUp()
@@ -22,9 +17,6 @@ class FileParserTests: XCTestCase {
     }
 
     override func tearDown() {
-        if fileManager.fileExists(atPath: testFileURL.path) {
-            try! fileManager.removeItem(at: testFileURL)
-        }
         sut = nil
         super.tearDown()
     }
@@ -105,14 +97,14 @@ class FileParserTests: XCTestCase {
         line: UInt = #line
     ) throws {
         // given
-        setFile(with: fileContents)
+        let testFile = TestFile(contents: fileContents)
                         
         // when
-        let parsed = try sut.parseFile(at: testFileURL)
+        let parsed = try sut.parseFile(at: testFile.url)
                                     
         // then
         let expected = LocalizableStrings(
-            path: testFileURL.path,
+            path: testFile.path,
             lines: expectedLines
         )
         XCTAssertEqual(expected, parsed, file: file, line: line)
@@ -123,10 +115,10 @@ class FileParserTests: XCTestCase {
         #"""
         "key" = "translation"
         """#
-        performTestExpectingFailure(fileContents: fileContents, errorAsserts: { error in
+        performTestExpectingFailure(fileContents: fileContents, errorAsserts: { testFile, error in
             assertEqual(
                 error: error,
-                parsingError: FileParsingError(line: #""key" = "translation""#, filePath: testFileURL.path)
+                parsingError: FileParsingError(line: #""key" = "translation""#, filePath: testFile.path)
             )
         })
     }
@@ -138,10 +130,10 @@ class FileParserTests: XCTestCase {
 
         "key" = "translation";
         """#
-        performTestExpectingFailure(fileContents: fileContents, errorAsserts: { error in
+        performTestExpectingFailure(fileContents: fileContents, errorAsserts: { testFile,error in
             assertEqual(
                 error: error,
-                parsingError: FileParsingError(line: #"/* comment"#, filePath: testFileURL.path)
+                parsingError: FileParsingError(line: #"/* comment"#, filePath: testFile.path)
             )
         })
     }
@@ -151,31 +143,27 @@ class FileParserTests: XCTestCase {
         #"""
         "key" = "tran"slation";
         """#
-        performTestExpectingFailure(fileContents: fileContents, errorAsserts: { error in
+        performTestExpectingFailure(fileContents: fileContents, errorAsserts: { testFile, error in
             assertEqual(
                 error: error,
-                parsingError: FileParsingError(line: #""key" = "tran"slation";"#, filePath: testFileURL.path)
+                parsingError: FileParsingError(line: #""key" = "tran"slation";"#, filePath: testFile.path)
             )
         })
     }
     
     private func performTestExpectingFailure(
         fileContents: String,
-        errorAsserts: (Error) -> (),
+        errorAsserts: (TestFile, Error) -> (),
         file: StaticString = #file,
         line: UInt = #line
     ) {
         // given
-        setFile(with: fileContents)
+        let testFile = TestFile(contents: fileContents)
         
         // then
-        XCTAssertThrowsError(try sut.parseFile(at: testFileURL)) { error in
-            errorAsserts(error)
+        XCTAssertThrowsError(try sut.parseFile(at: testFile.url)) { error in
+            errorAsserts(testFile, error)
         }
-    }
-    
-    private func setFile(with contents: String) {
-        try! contents.data(using: .utf8)!.write(to: testFileURL)
     }
 }
 

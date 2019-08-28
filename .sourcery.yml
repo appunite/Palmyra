@@ -3,4 +3,4 @@ sources:
 templates:
   - SourceryTemplates/
 output:
-  - Tests/PalmyraTests
+  Tests/PalmyraTests/

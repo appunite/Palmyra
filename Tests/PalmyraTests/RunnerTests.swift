@@ -6,27 +6,60 @@
 //
 
 import XCTest
+@testable import PalmyraCore
 
 class RunnerTests: XCTestCase {
+    var sut: Runner!
+    var fileParserMock: FileParserMock!
+    var validatorMock: ValidatorMock!
+    var issuePrinterMock: IssuePrinterMock!
 
     override func setUp() {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
+        super.setUp()
+        fileParserMock = FileParserMock()
+        validatorMock = ValidatorMock()
+        issuePrinterMock = IssuePrinterMock()
     }
 
     override func tearDown() {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+        issuePrinterMock = nil
+        validatorMock = nil
+        fileParserMock = nil
+        sut = nil
+        super.tearDown()
     }
-
-    func testExample() {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
+    
+    private func preconfigureSutWithArguments(_ args: [String]) {
+        sut = Runner(
+            arguments: args,
+            fileParser: fileParserMock,
+            validator: validatorMock,
+            issuePrinter: issuePrinterMock
+        )
     }
-
-    func testPerformanceExample() {
-        // This is an example of a performance test case.
-        self.measure {
-            // Put the code you want to measure the time of here.
+    
+    func testArgumentParsing_whenExistingFilePathsArePassed_shouldDelegateFurtherWorkToFileParser() {
+        // given
+        var collectedFileURLs = [URL]()
+        fileParserMock.parseFileAtClosure = { url in
+            collectedFileURLs.append(url)
+            return LocalizableStrings(path: url.path, lines: [:])
         }
+        let referenceFile = TestFile(name: "Ref.strings", contents: "")
+        let translationFile = TestFile(name: "Trans.strings", contents: "")
+        preconfigureSutWithArguments(
+            ["palmyra", "-r", referenceFile.path, "-t", translationFile.path]
+        )
+        
+        // when
+        sut.run()
+        
+        // then
+        XCTAssertEqual(
+            collectedFileURLs,
+            [referenceFile.url, translationFile.url]
+        )
     }
-
+    
+    
 }
