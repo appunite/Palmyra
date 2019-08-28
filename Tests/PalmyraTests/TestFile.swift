@@ -27,7 +27,7 @@ class TestFile {
         delete()
     }
     
-    func delete() {
+    private func delete() {
         if fileManager.fileExists(atPath: path) {
             try! fileManager.removeItem(at: url)
         }

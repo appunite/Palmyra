@@ -72,11 +72,11 @@ extension Collection where Element == ValidationIssue {
     }
 }
 
-struct FileURLFormingError: LocalizedError {
+struct FileURLFormingError: Equatable, LocalizedError {
     enum StringsFileType {
         case reference, translation
     }
-    enum Reason {
+    enum Reason: Equatable {
         case missingPath, missingFile(String)
     }
     

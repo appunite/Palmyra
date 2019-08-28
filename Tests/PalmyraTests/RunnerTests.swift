@@ -29,37 +29,16 @@ class RunnerTests: XCTestCase {
         super.tearDown()
     }
     
-    private func preconfigureSutWithArguments(_ args: [String]) {
-        sut = Runner(
-            arguments: args,
-            fileParser: fileParserMock,
-            validator: validatorMock,
-            issuePrinter: issuePrinterMock
-        )
-    }
+//    private func preconfigureSutWithArguments(_ args: [String]) {
+//        sut = Runner(
+//            arguments: args,
+//            fileParser: fileParserMock,
+//            validator: validatorMock,
+//            issuePrinter: issuePrinterMock
+//        )
+//    }
     
-    func testArgumentParsing_whenExistingFilePathsArePassed_shouldDelegateFurtherWorkToFileParser() {
-        // given
-        var collectedFileURLs = [URL]()
-        fileParserMock.parseFileAtClosure = { url in
-            collectedFileURLs.append(url)
-            return LocalizableStrings(path: url.path, lines: [:])
-        }
-        let referenceFile = TestFile(name: "Ref.strings", contents: "")
-        let translationFile = TestFile(name: "Trans.strings", contents: "")
-        preconfigureSutWithArguments(
-            ["palmyra", "-r", referenceFile.path, "-t", translationFile.path]
-        )
-        
-        // when
-        sut.run()
-        
-        // then
-        XCTAssertEqual(
-            collectedFileURLs,
-            [referenceFile.url, translationFile.url]
-        )
-    }
+    
     
     
 }
