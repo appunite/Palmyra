@@ -5,7 +5,7 @@ build:
 	swift build -c release --disable-sandbox
 
 install: build
-	install ".build/release/Palmyra" "$(bindir)"
+	install ".build/release/Palmyra" "$(bindir)/palmyra"
 
 uninstall:
 	rm -rf "$(bindir)/Palmyra"
