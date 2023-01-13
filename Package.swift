@@ -6,7 +6,7 @@ let package = Package(
     name: "Palmyra",
     platforms: [.macOS(.v10_14)],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-tools-support-core.git", .exact("0.4.0")),
+        .package(url: "https://github.com/apple/swift-tools-support-core.git", .upToNextMajor(from: "0.4.0")),
     ],
     targets: [
         .target(
