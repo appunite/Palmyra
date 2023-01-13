@@ -7,7 +7,7 @@
 
 import XCTest
 @testable import PalmyraCore
-import Basic
+import TSCBasic
 
 class IssuePrinterTests: XCTestCase {
     var sut: IssuePrinterImp!
