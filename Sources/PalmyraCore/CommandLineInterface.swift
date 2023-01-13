@@ -5,7 +5,7 @@
 //
 
 import Foundation
-import SPMUtility
+import TSCUtility
 
 protocol CommandLineInterface {
     func process(arguments: [String]) throws -> (Foundation.URL, [Foundation.URL])

@@ -5,7 +5,7 @@
 //
 
 import Foundation
-import Basic
+import TSCBasic
 
 protocol IssuePrinter {
     func printProgramFailure(error: Error)
