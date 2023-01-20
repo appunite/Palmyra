@@ -15,10 +15,10 @@ let package = Package(
         ),
         .target(
             name: "PalmyraCore",
-            dependencies: ["SwiftToolsSupport"]
+            dependencies: ["SwiftToolsSupport-auto"]
         ),
         .testTarget(
             name: "PalmyraTests",
-            dependencies: ["PalmyraCore", "SwiftToolsSupport"])
+            dependencies: ["PalmyraCore", "SwiftToolsSupport-auto"])
     ]
 )
