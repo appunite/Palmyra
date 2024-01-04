@@ -6,7 +6,7 @@ Palmyra is a command line tool that validates your Localizable.strings files aga
 
 ## Why use Palmyra?
 
-People who translate your Localizable.strings files often don't have this specific knowledge about how string interpolations work in what are the valid formats. They're also, like all people, make people mistakes. They'll accidentally add space between `%` and `@` or add one where it shouldn't be. iOS runtime on the other hand is merciless and it will crash your app, when such mistke occurs. Palmyra has been created to save you from those mistakes.
+People who translate your Localizable.strings files often don't have this specific knowledge about how string interpolations work in what are the valid formats. Like everyone they also make mistakes. They'll accidentally add space between `%` and `@` or add one where it shouldn't be. iOS runtime on the other hand is merciless and it will crash your app, when such mistke occurs. Palmyra has been created to save you from those mistakes.
 
 ## Installation
 
