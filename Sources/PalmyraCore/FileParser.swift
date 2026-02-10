@@ -63,9 +63,32 @@ class FileParserImp: FileParser {
             fatalError("Oops, regex needs to be checked...")
         }
         let key = String(lineString[match.range(at: 1)])
-        let translation = String(lineString[match.range(at: 2)])
+        let translation = unescapeUnicodeSequences(String(lineString[match.range(at: 2)]))
         return (key, translation)
     }
+    
+    private func unescapeUnicodeSequences(_ string: String) -> String {
+        let matches = unicodeEscapeRegex.matches(
+            in: string,
+            options: [],
+            range: string.startToEndNSRange
+        )
+        guard !matches.isEmpty else { return string }
+        var result = string
+        for match in matches.reversed() {
+            let hexString = String(string[match.range(at: 1)])
+            if let codePoint = UInt32(hexString, radix: 16),
+               let scalar = Unicode.Scalar(codePoint) {
+                let range = Range<String.Index>(match.range, in: result)!
+                result.replaceSubrange(range, with: String(Character(scalar)))
+            }
+        }
+        return result
+    }
+    
+    private let unicodeEscapeRegex = try! NSRegularExpression(
+        pattern: #"\\U([0-9A-Fa-f]{4})"#
+    )
     
     private let translationsLineRegex = try! NSRegularExpression(
         pattern: #"^\"((?:\\.|[^\\"])*?)\"\s*=\s*\"((?:\\.|[^\\"])*?)\";"#
