@@ -13,8 +13,14 @@ protocol IssuePrinter {
 }
 
 private func makeWriteClosure() -> (String, TerminalController.Color, Bool) -> () {
-    return { [tc = TerminalController(stream: stdoutStream)!] string, color, bold in
-        tc.write(string, inColor: color, bold: bold)
+    let tc = TerminalController(stream: stdoutStream)
+    return { string, color, bold in
+        if let tc {
+            tc.write(string, inColor: color, bold: bold)
+        } else {
+            stdoutStream.write(string)
+            stdoutStream.flush()
+        }
     }
 }
 
