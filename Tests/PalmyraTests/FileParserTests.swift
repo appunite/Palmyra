@@ -89,6 +89,30 @@ class FileParserTests: XCTestCase {
             expectedLines: expectedLines
         )
     }
+    
+    func testParsing_whenValueContainsUnicodeEscape_shouldUnescapeToCharacter() throws {
+        let fileContents =
+        #"""
+        "key" = "hello\U00A0world";
+        """#
+        let expectedLines = ["key": "hello\u{00A0}world"]
+        try performTestExpectingSuccessfulResult(
+            fileContents: fileContents,
+            expectedLines: expectedLines
+        )
+    }
+    
+    func testParsing_whenValueContainsMultipleUnicodeEscapes_shouldUnescapeAll() throws {
+        let fileContents =
+        #"""
+        "key" = "\U00ABhello\U00A0world\U00BB";
+        """#
+        let expectedLines = ["key": "\u{00AB}hello\u{00A0}world\u{00BB}"]
+        try performTestExpectingSuccessfulResult(
+            fileContents: fileContents,
+            expectedLines: expectedLines
+        )
+    }
 
     private func performTestExpectingSuccessfulResult(
         fileContents: String,
