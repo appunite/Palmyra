@@ -5,6 +5,9 @@ import PackageDescription
 let package = Package(
     name: "Palmyra",
     platforms: [.macOS(.v10_14)],
+    products: [
+        .executable(name: "Palmyra", targets: ["Palmyra"])
+    ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-tools-support-core.git", .upToNextMajor(from: "0.4.0")),
     ],
