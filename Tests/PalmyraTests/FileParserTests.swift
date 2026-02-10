@@ -110,6 +110,54 @@ class FileParserTests: XCTestCase {
         XCTAssertEqual(expected, parsed, file: file, line: line)
     }
     
+    func testParsing_whenNoSpaceBeforeEquals_shouldParse() throws {
+        let fileContents =
+        #"""
+        "key"= "translation";
+        """#
+        let expectedLines = ["key": "translation"]
+        try performTestExpectingSuccessfulResult(
+            fileContents: fileContents,
+            expectedLines: expectedLines
+        )
+    }
+    
+    func testParsing_whenNoSpaceAfterEquals_shouldParse() throws {
+        let fileContents =
+        #"""
+        "key" ="translation";
+        """#
+        let expectedLines = ["key": "translation"]
+        try performTestExpectingSuccessfulResult(
+            fileContents: fileContents,
+            expectedLines: expectedLines
+        )
+    }
+    
+    func testParsing_whenNoSpacesAroundEquals_shouldParse() throws {
+        let fileContents =
+        #"""
+        "key"="translation";
+        """#
+        let expectedLines = ["key": "translation"]
+        try performTestExpectingSuccessfulResult(
+            fileContents: fileContents,
+            expectedLines: expectedLines
+        )
+    }
+    
+    func testParsing_whenMultipleSpacesAroundEquals_shouldParse() throws {
+        let fileContents =
+        #"""
+        "key"  =  "translation";
+        """#
+        let expectedLines = ["key": "translation"]
+        try performTestExpectingSuccessfulResult(
+            fileContents: fileContents,
+            expectedLines: expectedLines
+        )
+    }
+    
     func testParsing_whenTranslationsIsMissingSemicolon_shouldThrow() {
         let fileContents =
         #"""

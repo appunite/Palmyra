@@ -68,6 +68,6 @@ class FileParserImp: FileParser {
     }
     
     private let translationsLineRegex = try! NSRegularExpression(
-        pattern: #"^\"((?:\\.|[^\\"])*?)\"\s=\s\"((?:\\.|[^\\"])*?)\";"#
+        pattern: #"^\"((?:\\.|[^\\"])*?)\"\s*=\s*\"((?:\\.|[^\\"])*?)\";"#
     )
 }
